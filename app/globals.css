@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white text-text antialiased;
+  }
+}
+
+@layer components {
+  .nav-entrance {
+    animation: nav-enter 0.3s ease-out both;
+  }
+
+  .interactive-btn {
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .interactive-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 24px rgba(124, 58, 237, 0.3);
+  }
+
+  .interactive-btn:active {
+    transform: scale(0.95);
+  }
+
+  .interactive-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .interactive-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px rgba(17, 17, 17, 0.12);
+  }
+
+  .purple-gradient-flow {
+    background: linear-gradient(130deg, #0f0f0f, #111111, #7c3aed, #8b5cf6);
+    background-size: 220% 220%;
+    animation: pulse-gradient 6s ease-in-out infinite;
+  }
+
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    background: #2a2142;
+  }
+
+  .skeleton-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.35), transparent);
+    animation: shimmer 1.2s infinite;
+  }
+
+  .status-pending {
+    animation: pending-pulse 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes nav-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pending-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(124, 58, 237, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(124, 58, 237, 0.4);
+  }
+}
