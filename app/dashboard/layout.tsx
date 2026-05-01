@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -15,7 +15,9 @@ import {
   Search,
   Menu,
 } from "lucide-react";
-import { auth } from "../../lib/firebase";
+import { auth, storage } from "../../lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { updateProfile } from "firebase/auth";
 
 export default function DashboardLayout({
   children,
@@ -25,6 +27,37 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleAvatarClick = () => {
+    if (!isUploading) {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    
+    setIsUploading(true);
+    try {
+      const fileRef = ref(storage, `avatars/${user.uid}_${Date.now()}`);
+      await uploadBytes(fileRef, file);
+      const photoURL = await getDownloadURL(fileRef);
+      
+      await updateProfile(user, { photoURL });
+      setUser({ ...user, photoURL }); // Update local state
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      alert("Failed to upload profile picture.");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((u) => {
@@ -98,11 +131,20 @@ export default function DashboardLayout({
 
         {/* User Profile & Logout */}
         <div className="p-4 border-t border-border/50">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            accept="image/*" 
+            className="hidden" 
+          />
           <div className="flex items-center p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group">
             <img
               src={user?.photoURL || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user?.displayName || "User") + "&background=7C3AED&color=fff"}
               alt="User avatar"
-              className="w-10 h-10 rounded-full border border-border"
+              onClick={handleAvatarClick}
+              className={`w-10 h-10 rounded-full border border-border object-cover ${isUploading ? 'opacity-50' : 'hover:opacity-80 transition-opacity'}`}
+              title="Change Profile Picture"
             />
             <div className="ml-3 flex-1 overflow-hidden">
               <p className="text-sm font-medium text-text truncate">{user?.displayName || "User"}</p>
@@ -146,9 +188,11 @@ export default function DashboardLayout({
             </button>
             
             <img
-              className="h-8 w-8 rounded-full border border-border md:hidden"
+              className={`h-8 w-8 rounded-full border border-border md:hidden object-cover ${isUploading ? 'opacity-50' : 'cursor-pointer hover:opacity-80 transition-opacity'}`}
               src={user?.photoURL || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user?.displayName || "User") + "&background=7C3AED&color=fff"}
               alt="User avatar"
+              onClick={handleAvatarClick}
+              title="Change Profile Picture"
             />
           </div>
         </header>
