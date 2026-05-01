@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 
 export default function RegisterPage() {
@@ -11,17 +11,20 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleRegister = async () => {
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
     setError("");
+    setSuccess("");
     setLoading(true);
 
     try {
@@ -38,14 +41,16 @@ export default function RegisterPage() {
         throw new Error(data.error || "Registration failed");
       }
 
-      // 2. On success, sign in the user
+      // 2. On success, sign in the user to send verification
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const token = await userCredential.user.getIdToken();
+      await sendEmailVerification(userCredential.user);
+      await auth.signOut(); // log them out until they verify
       
-      // Save token in cookie
-      document.cookie = `firebase-auth-token=${token}; path=/; max-age=86400; Secure; SameSite=Strict`;
-      
-      router.push("/dashboard");
+      setSuccess("Account created! Please check your email to verify your account before logging in.");
+      // Optional: automatically route to login after a few seconds
+      setTimeout(() => {
+        router.push("/login");
+      }, 5000);
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to create account");
@@ -71,11 +76,19 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <div className="space-y-4">
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg mb-6 text-sm">
+            {success}
+          </div>
+        )}
+
+        <form onSubmit={handleRegister} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
             <input
               type="text"
+              name="name"
+              autoComplete="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -89,6 +102,8 @@ export default function RegisterPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
             <input
               type="email"
+              name="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -101,6 +116,8 @@ export default function RegisterPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input
               type="password"
+              name="password"
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -114,6 +131,8 @@ export default function RegisterPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
             <input
               type="password"
+              name="confirmPassword"
+              autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
@@ -124,14 +143,13 @@ export default function RegisterPage() {
           </div>
 
           <button
-            type="button"
-            onClick={handleRegister}
+            type="submit"
             disabled={loading}
             className="w-full py-3 bg-[#7C3AED] hover:bg-purple-700 text-white rounded-xl font-semibold shadow-sm shadow-purple-500/30 transition-all disabled:opacity-50 mt-2"
           >
             {loading ? "Creating Account..." : "Sign Up"}
           </button>
-        </div>
+        </form>
 
         <p className="mt-8 text-center text-gray-500 text-sm">
           Already have an account?{" "}

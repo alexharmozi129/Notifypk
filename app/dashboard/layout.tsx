@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -15,6 +15,7 @@ import {
   Search,
   Menu,
 } from "lucide-react";
+import { auth } from "../../lib/firebase";
 
 export default function DashboardLayout({
   children,
@@ -22,6 +23,25 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((u) => {
+      if (u) {
+        setUser(u);
+      } else {
+        router.push("/login");
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    document.cookie = "firebase-auth-token=; path=/; max-age=0;";
+    router.push("/login");
+  };
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -80,15 +100,15 @@ export default function DashboardLayout({
         <div className="p-4 border-t border-border/50">
           <div className="flex items-center p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group">
             <img
-              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+              src={user?.photoURL || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user?.displayName || "User") + "&background=7C3AED&color=fff"}
               alt="User avatar"
               className="w-10 h-10 rounded-full border border-border"
             />
             <div className="ml-3 flex-1 overflow-hidden">
-              <p className="text-sm font-medium text-text truncate">Alex Carter</p>
-              <p className="text-xs text-gray-500 truncate">alex@notifypk.com</p>
+              <p className="text-sm font-medium text-text truncate">{user?.displayName || "User"}</p>
+              <p className="text-xs text-gray-500 truncate">{user?.email || "Loading..."}</p>
             </div>
-            <button className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors" title="Logout">
+            <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors" title="Logout">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
@@ -127,7 +147,7 @@ export default function DashboardLayout({
             
             <img
               className="h-8 w-8 rounded-full border border-border md:hidden"
-              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+              src={user?.photoURL || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user?.displayName || "User") + "&background=7C3AED&color=fff"}
               alt="User avatar"
             />
           </div>

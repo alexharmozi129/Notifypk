@@ -13,12 +13,21 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      if (!userCredential.user.emailVerified) {
+        await auth.signOut();
+        setError("Please verify your email before logging in.");
+        setLoading(false);
+        return;
+      }
+
       const token = await userCredential.user.getIdToken();
       
       // Save token in cookie
@@ -50,11 +59,13 @@ export default function LoginPage() {
           </div>
         )}
 
-        <div className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               type="email"
+              name="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -67,6 +78,8 @@ export default function LoginPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input
               type="password"
+              name="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -76,14 +89,13 @@ export default function LoginPage() {
           </div>
 
           <button
-            type="button"
-            onClick={handleLogin}
+            type="submit"
             disabled={loading}
             className="w-full py-3 bg-[#7C3AED] hover:bg-purple-700 text-white rounded-xl font-semibold shadow-sm shadow-purple-500/30 transition-all disabled:opacity-50 mt-2"
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
-        </div>
+        </form>
 
         <p className="mt-8 text-center text-gray-500 text-sm">
           Don't have an account?{" "}
